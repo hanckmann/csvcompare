@@ -7,6 +7,8 @@ The rows of the file will be compared based on the header-names.
 The two related rows from each file are displayed below each other.
 Differences are highlighted with red.
 
+![CSV Compare screenshot](https://raw.githubusercontent.com/hanckmann/csvcompare/master/images/screenshot.png)
+
 
 Requirements
 ------------
