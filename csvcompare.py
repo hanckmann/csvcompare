@@ -198,9 +198,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def compare(self):
         if not self.file1_lineedit.text():
-            self.file1_lineedit.setText("/home/patrick/Projects/csvcompare/data1.csv")
+            self.file1_lineedit.setText("/home/patrick/Projects/csvcompare/data/data1.csv")
         if not self.file2_lineedit.text():
-            self.file2_lineedit.setText("/home/patrick/Projects/csvcompare/data2.csv")
+            self.file2_lineedit.setText("/home/patrick/Projects/csvcompare/data/data2.csv")
         df_file1 = None
         df_file2 = None
         try:
