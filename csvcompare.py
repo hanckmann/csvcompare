@@ -81,10 +81,16 @@ class CompareModel(QtCore.QAbstractTableModel):
                 return QtGui.QBrush(color)
         return QtCore.QVariant()
 
-    def headerData(self, column, orientation, role=QtCore.Qt.DisplayRole):
-        if role == QtCore.Qt.DisplayRole and orientation == QtCore.Qt.Horizontal:
-            return self._header[column]
-        return QtCore.QAbstractTableModel.headerData(self, column, orientation, role)
+    def headerData(self, section, orientation, role):
+        if role == QtCore.Qt.DisplayRole:
+            if orientation == QtCore.Qt.Horizontal:
+                return self._header[section]
+            if orientation == QtCore.Qt.Vertical:
+                data_select = section % 2
+                data_row = int(section / 2)
+                if not data_select:
+                    return "line {} » File {} ".format(data_row, data_select + 1)
+                return "File {} ".format(data_select + 1)
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -132,6 +138,8 @@ class MainWindow(QtWidgets.QMainWindow):
         files_widget.setLayout(files_layout)
         # Show data
         self.compare_tableview = QtWidgets.QTableView()
+        self.compare_tableview.resizeColumnsToContents()
+        self.compare_tableview.verticalHeader().setDefaultAlignment(QtCore.Qt.AlignRight)
         # Build Main Window
         central_layout = QtWidgets.QVBoxLayout()
         central_layout.addWidget(files_widget)
