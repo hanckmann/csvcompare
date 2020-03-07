@@ -23,11 +23,13 @@ Running
 
 CSV Compare can be run directly from this source tree directory. Just type:
 
- * `python3 csvcompare.py`
+```
+$ python3 csvcompare.py
+```
 
 If `ModuleNotFoundError`s show up, the dependencies must be installed.
 
-First create and start a https://docs.python.org/3/library/venv.html#creating-virtual-environments[python 3 virtual environment]:
+First create and start a [python 3 virtual environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments):
 
 ```
 $ python -m venv venv
@@ -38,13 +40,16 @@ The last line might be different depending on the shell/prompt environment.
 
 Then install the dependencies:
 
- * `pip install -r requirements.txt`
+```
+$ pip install -r requirements.txt
+```
 
 
 License
 -------
 
 The license for the code in CSV Compare is Apache License Version 2.0.
+
 Also see: LICENSE.txt
 
 
@@ -54,3 +59,5 @@ Contributing
 CSV Compare uses Github to track bugs, user questions, and development.
 
 Repository: https://github.com/hanckmann/csvcompare
+
+CSV Compare uses the [GitFlow branching model](https://danielkummer.github.io/git-flow-cheatsheet/), created by Vincent Driessen.
