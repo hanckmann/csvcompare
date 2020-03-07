@@ -59,3 +59,5 @@ Contributing
 CSV Compare uses Github to track bugs, user questions, and development.
 
 Repository: https://github.com/hanckmann/csvcompare
+
+CSV Compare uses the [GitFlow branching model](https://danielkummer.github.io/git-flow-cheatsheet/), created by Vincent Driessen.
