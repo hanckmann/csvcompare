@@ -19,7 +19,7 @@ __author__ = "Patrick Hanckmann"
 __copyright__ = "Copyright 2020, Lord Dashboard b.v."
 
 __license__ = "Apache License 2.0"
-__version__ = "0.1.2"
+__version__ = "0.2.1"
 __maintainer__ = "Patrick Hanckmann"
 __email__ = "hanckmann@gmail.com"
 __status__ = "Development"  # "Production"
@@ -37,7 +37,7 @@ class CompareModel(QtCore.QAbstractTableModel):
     def rowCount(self, parent=None):
         rows_data1 = len(self._data1)
         rows_data2 = len(self._data2)
-        return rows_data1 + rows_data2
+        return max(rows_data1, rows_data2) * 2
 
     def columnCount(self, parent=None):
         cols_data1 = self._data1.columns.size
@@ -67,15 +67,18 @@ class CompareModel(QtCore.QAbstractTableModel):
                 else:
                     raise ValueError("DataSelector error")
             if role == QtCore.Qt.BackgroundRole:
+                color = QtCore.Qt.white
+                if data_row % 2 == 0:
+                    color = QtGui.QColor(216, 216, 216)
                 if data_row < len(self._data1) and data1_col is not None and \
                    data_row < len(self._data2) and data2_col is not None:
                     if not str(self._data1.values[data_row][data1_col]) == str(self._data2.values[data_row][data2_col]):
-                        return QtGui.QBrush(QtCore.Qt.red)
+                        color = QtCore.Qt.red
                 else:
                     if data_row < len(self._data1) and data1_col is not None or \
                        data_row < len(self._data2) and data2_col is not None:
-                        return QtGui.QBrush(QtCore.Qt.red)
-                return QtGui.QBrush(QtCore.Qt.white)
+                        color = QtCore.Qt.red
+                return QtGui.QBrush(color)
         return QtCore.QVariant()
 
     def headerData(self, column, orientation, role=QtCore.Qt.DisplayRole):
@@ -116,17 +119,15 @@ class MainWindow(QtWidgets.QMainWindow):
         compare_button = QtWidgets.QPushButton(text="COMPARE",
                                                clicked=lambda: self.compare())
         files_layout = QtWidgets.QHBoxLayout()
-        files_layout.addStretch(1)
         files_layout.addWidget(file1_label)
         files_layout.addWidget(self.file1_lineedit)
         files_layout.addWidget(file1_button)
-        files_layout.addStretch(1)
+        files_layout.addSpacing(50)
         files_layout.addWidget(compare_button)
-        files_layout.addStretch(1)
+        files_layout.addSpacing(50)
         files_layout.addWidget(file2_label)
         files_layout.addWidget(self.file2_lineedit)
         files_layout.addWidget(file2_button)
-        files_layout.addStretch(1)
         files_widget = QtWidgets.QWidget()
         files_widget.setLayout(files_layout)
         # Show data
@@ -219,6 +220,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_error_message(message="{}\n{}".format("Error reading data:", str(e)), title="Error reading csv files")
             return
         self.compare_tableview.setModel(model)
+        self.compare_tableview.resizeColumnsToContents()
 
     def show_error_message(self, message: str, title=None):
         print("ERROR: {}".format(message))
