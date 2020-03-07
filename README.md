@@ -23,7 +23,9 @@ Running
 
 CSV Compare can be run directly from this source tree directory. Just type:
 
- * `python3 csvcompare.py`
+```
+$ python3 csvcompare.py
+```
 
 If `ModuleNotFoundError`s show up, the dependencies must be installed.
 
@@ -38,13 +40,16 @@ The last line might be different depending on the shell/prompt environment.
 
 Then install the dependencies:
 
- * `pip install -r requirements.txt`
+```
+$ pip install -r requirements.txt
+```
 
 
 License
 -------
 
 The license for the code in CSV Compare is Apache License Version 2.0.
+
 Also see: LICENSE.txt
 
 
