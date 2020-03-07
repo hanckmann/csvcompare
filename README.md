@@ -29,7 +29,7 @@ $ python3 csvcompare.py
 
 If `ModuleNotFoundError`s show up, the dependencies must be installed.
 
-First create and start a https://docs.python.org/3/library/venv.html#creating-virtual-environments[python 3 virtual environment]:
+First create and start a [python 3 virtual environment](https://docs.python.org/3/library/venv.html#creating-virtual-environments):
 
 ```
 $ python -m venv venv
