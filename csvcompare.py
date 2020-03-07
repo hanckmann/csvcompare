@@ -37,7 +37,7 @@ class CompareModel(QtCore.QAbstractTableModel):
     def rowCount(self, parent=None):
         rows_data1 = len(self._data1)
         rows_data2 = len(self._data2)
-        return rows_data1 + rows_data2
+        return max(rows_data1, rows_data2) * 2
 
     def columnCount(self, parent=None):
         cols_data1 = self._data1.columns.size
