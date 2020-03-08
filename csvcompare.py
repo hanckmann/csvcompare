@@ -20,7 +20,7 @@ __author__ = "Patrick Hanckmann"
 __copyright__ = "Copyright 2020, Lord Dashboard b.v."
 
 __license__ = "Apache License 2.0"
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 __maintainer__ = "Patrick Hanckmann"
 __email__ = "hanckmann@gmail.com"
 __status__ = "Development"  # "Production"

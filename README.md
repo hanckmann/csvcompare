@@ -13,7 +13,7 @@ Differences are highlighted with red.
 Requirements
 ------------
 
-* Python 3.8
+* Python 3.5
 * PyQt5 (Python3 bindings for Qt5)
 * datatable (for loading the data)
 
