@@ -11,8 +11,8 @@
 import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-import pandas as pd
 from functools import lru_cache
+import datatable as dt
 
 
 __application__ = "CSV Compare"
@@ -29,24 +29,37 @@ __status__ = "Development"  # "Production"
 class CompareModel(QtCore.QAbstractTableModel):
     def __init__(self, data1, data2, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent)
-        self._data1 = data1
-        self._data2 = data2
-        self._data1_header = list(data1.columns.values)
-        self._data2_header = list(data2.columns.values)
-        self._header = list(data1.columns.values) + [item for item in data2.columns.values if item not in data1.columns.values]
+        self._data1_filename = data1
+        self._data2_filename = data2
+        self._data1 = dt.fread(data1)
+        self._data2 = dt.fread(data2)
+        self._data1_header = list(self._data1.names)
+        self._data2_header = list(self._data2.names)
+        self._header = self._data1_header + [item for item in self._data2_header if item not in self._data1_header]
+
+    @lru_cache(maxsize=1)
+    def rowCount_data1(self):
+        return self._data1.shape[0]
+
+    @lru_cache(maxsize=1)
+    def rowCount_data2(self):
+        return self._data2.shape[0]
+
+    @lru_cache(maxsize=1)
+    def columnCount_data1(self):
+        return self._data1.shape[1]
+
+    @lru_cache(maxsize=1)
+    def columnCount_data2(self):
+        return self._data2.shape[1]
 
     @lru_cache(maxsize=1)
     def rowCount(self, parent=None):
-        rows_data1 = len(self._data1)
-        rows_data2 = len(self._data2)
-        return max(rows_data1, rows_data2) * 2
+        return max(self.rowCount_data1(), self.rowCount_data2()) * 2
 
     @lru_cache(maxsize=1)
     def columnCount(self, parent=None):
-        cols_data1 = self._data1.columns.size
-        cols_data2 = self._data2.columns.size
-        cols_datacompare = max(cols_data1, cols_data2)
-        return cols_datacompare
+        return max(self.columnCount_data1(), self.columnCount_data2())
 
     @lru_cache(maxsize=512)
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -63,24 +76,24 @@ class CompareModel(QtCore.QAbstractTableModel):
         if index.isValid():
             if role == QtCore.Qt.DisplayRole:
                 if data_select == 0:
-                    if data_row < len(self._data1) and data1_col is not None:
-                        return QtCore.QVariant(str(self._data1.values[data_row][data1_col]))
+                    if data_row < self.rowCount_data1() and data1_col is not None:
+                        return QtCore.QVariant(str(self._data1[data_row, data1_col]))
                 elif data_select == 1:
-                    if data_row < len(self._data2) and data2_col is not None:
-                        return QtCore.QVariant(str(self._data2.values[data_row][data2_col]))
+                    if data_row < self.rowCount_data2() and data2_col is not None:
+                        return QtCore.QVariant(str(self._data2[data_row, data2_col]))
                 else:
                     raise ValueError("DataSelector error")
             if role == QtCore.Qt.BackgroundRole:
                 color = QtCore.Qt.white
                 if data_row % 2 == 0:
                     color = QtGui.QColor(216, 216, 216)
-                if data_row < len(self._data1) and data1_col is not None and \
-                   data_row < len(self._data2) and data2_col is not None:
-                    if not str(self._data1.values[data_row][data1_col]) == str(self._data2.values[data_row][data2_col]):
+                if data_row < self.rowCount_data1() and data1_col is not None and \
+                   data_row < self.rowCount_data2() and data2_col is not None:
+                    if not str(self._data1[data_row, data1_col]) == str(self._data2[data_row, data2_col]):
                         color = QtCore.Qt.red
                 else:
-                    if data_row < len(self._data1) and data1_col is not None or \
-                       data_row < len(self._data2) and data2_col is not None:
+                    if data_row < self.rowCount_data1() and data1_col is not None or \
+                       data_row < self.rowCount_data2() and data2_col is not None:
                         color = QtCore.Qt.red
                 return QtGui.QBrush(color)
         return QtCore.QVariant()
@@ -219,19 +232,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.show_error_message(message="Please provide files to compare", title="Error reading csv files")
 
         file1_name = self.file1_lineedit.text()
-        file1_name = self.file2_lineedit.text()
+        file2_name = self.file2_lineedit.text()
         try:
-            df_file1 = pd.read_csv(self.file1_lineedit.text(), sep=';')
-        except Exception as e:
-            self.show_error_message(message="{}\n{}".format("Error reading csv file 1:", str(e)), title="Error reading csv files")
-            return
-        try:
-            df_file2 = pd.read_csv(self.file2_lineedit.text(), sep=';')
-        except Exception as e:
-            self.show_error_message(message="{}\n{}".format("Error reading csv file 2:", str(e)), title="Error reading csv files")
-            return
-        try:
-            model = CompareModel(df_file1, df_file2)
+            model = CompareModel(file1_name, file2_name)
         except ValueError as e:
             self.show_error_message(message="{}\n{}".format("Error reading data:", str(e)), title="Error reading csv files")
             return
@@ -255,8 +258,15 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 if __name__ == '__main__':
+    # Input files as argument
+    filename1 = None
+    filename2 = None
+    if len(sys.argv) >= 2:
+        filename1 = sys.argv[1]
+    if len(sys.argv) >= 3:
+        filename2 = sys.argv[2]
     # Start UI
     app = QtWidgets.QApplication(sys.argv)
-    w = MainWindow()
+    w = MainWindow(file1=filename1, file2=filename2)
     w.show()
     sys.exit(app.exec_())
