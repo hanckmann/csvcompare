@@ -27,8 +27,9 @@ __status__ = "Development"  # "Production"
 
 
 class CompareModel(QtCore.QAbstractTableModel):
-    def __init__(self, data1, data2, parent=None):
+    def __init__(self, data1, data2, strict_typing=True, parent=None):
         QtCore.QAbstractTableModel.__init__(self, parent)
+        self._strict_typing = strict_typing
         self._data1_filename = data1
         self._data2_filename = data2
         self._data1 = dt.fread(data1)
@@ -36,6 +37,16 @@ class CompareModel(QtCore.QAbstractTableModel):
         self._data1_header = list(self._data1.names)
         self._data2_header = list(self._data2.names)
         self._header = self._data1_header + [item for item in self._data2_header if item not in self._data1_header]
+
+    def strict_typing(self, status=None):
+        if status is not None:
+            if status:
+                self._strict_typing = True
+            else:
+                self._strict_typing = False
+            self.layoutAboutToBeChanged.emit()
+            self.layoutChanged.emit()
+        return self._strict_typing
 
     @lru_cache(maxsize=1)
     def rowCount_data1(self):
@@ -60,6 +71,17 @@ class CompareModel(QtCore.QAbstractTableModel):
     @lru_cache(maxsize=1)
     def columnCount(self, parent=None):
         return max(self.columnCount_data1(), self.columnCount_data2())
+
+    def min_type(self, value, strict_typing):
+        if not strict_typing:
+            try:
+                number = float(value)
+                if int(number) == number:
+                    return int(number)
+                return number
+            except Exception:
+                pass
+        return value
 
     @lru_cache(maxsize=512)
     def data(self, index, role=QtCore.Qt.DisplayRole):
@@ -89,7 +111,8 @@ class CompareModel(QtCore.QAbstractTableModel):
                     color = QtGui.QColor(216, 216, 216)
                 if data_row < self.rowCount_data1() and data1_col is not None and \
                    data_row < self.rowCount_data2() and data2_col is not None:
-                    if not str(self._data1[data_row, data1_col]) == str(self._data2[data_row, data2_col]):
+                    if not str(self.min_type(self._data1[data_row, data1_col], self._strict_typing)) == \
+                       str(self.min_type(self._data2[data_row, data2_col], self._strict_typing)):
                         color = QtCore.Qt.red
                 else:
                     if data_row < self.rowCount_data1() and data1_col is not None or \
@@ -113,14 +136,19 @@ class CompareModel(QtCore.QAbstractTableModel):
 
 class MainWindow(QtWidgets.QMainWindow):
 
+    compare_signal = QtCore.pyqtSignal()
+
     def __init__(self, parent=None, file1=None, file2=None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.strict_typing = True
         self.setup_ui()
+        self.compare_signal.connect(self.compare)
         if file1:
             self.file1_lineedit.setText(file1)
         if file2:
             self.file2_lineedit.setText(file2)
-        self.model = None
+        if file1 and file2:
+            self.compare_signal.emit()
 
     def setup_ui(self):
         self.ui_titlebar()
@@ -131,13 +159,13 @@ class MainWindow(QtWidgets.QMainWindow):
         file1_label = QtWidgets.QLabel("File 1:")
         file1_lineedit = QtWidgets.QLineEdit()
         file1_button = QtWidgets.QPushButton(text="...",
-                                             clicked=lambda: self.show_file1_input_dialog())
+                                             clicked=lambda: self.show_file_input_dialog(index=0))
         file1_button.setFixedSize(25, 25)
         self.file1_lineedit = file1_lineedit
         file2_label = QtWidgets.QLabel("File 2:")
         file2_lineedit = QtWidgets.QLineEdit()
         file2_button = QtWidgets.QPushButton(text="...",
-                                             clicked=lambda: self.show_file2_input_dialog())
+                                             clicked=lambda: self.show_file_input_dialog(index=1))
         file2_button.setFixedSize(25, 25)
         self.file2_lineedit = file2_lineedit
         compare_button = QtWidgets.QPushButton(text="COMPARE",
@@ -184,9 +212,18 @@ class MainWindow(QtWidgets.QMainWindow):
         exit_button.setStatusTip('Exit application')
         exit_button.triggered.connect(self.close)
         main_menu = self.menuBar()
+
+        type_button = QtWidgets.QAction('Strict typing', self, checkable=True)
+        type_button.setStatusTip('Enable Strict typing')
+        type_button.setChecked(self.strict_typing)
+        type_button.triggered.connect(self.toggle_strict_typing)
+
+        main_menu = self.menuBar()
         file_menu = main_menu.addMenu('File')
         file_menu.addAction(about_button)
         file_menu.addAction(exit_button)
+        edit_menu = main_menu.addMenu('Edit')
+        edit_menu.addAction(type_button)
 
     def ui_statusbar(self):
         self.status_message_left = QtWidgets.QLabel("left")
@@ -209,31 +246,41 @@ class MainWindow(QtWidgets.QMainWindow):
         if right is not None:
             self.status_message_right.setText(right)
 
-    def show_file1_input_dialog(self):
+    def show_file_input_dialog(self, index):
+        location = "~"
+        if index == 0:
+            location = self.file1_lineedit.text()
+        else:
+            location = self.file2_lineedit.text()
         filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                         "Open CSV File",
-                                                         ".",
-                                                         "Data Files (*.csv)")
-        self.file1_lineedit.setText(filename[0])
+                                                         "Open Spreadsheet File",
+                                                         location,
+                                                         'Data files(*.csv *.xlsx *.xls)')
+        if index == 0:
+            self.file1_lineedit.setText(filename[0])
+        else:
+            self.file2_lineedit.setText(filename[0])
 
-    def show_file2_input_dialog(self):
-        filename = QtWidgets.QFileDialog.getOpenFileName(self,
-                                                         "Open CSV File",
-                                                         ".",
-                                                         "Data Files (*.csv)")
-        self.file2_lineedit.setText(filename[0])
+    def toggle_strict_typing(self):
+        self.strict_typing = not self.strict_typing
+        self.model.strict_typing(self.strict_typing)
 
     def compare(self):
         if not self.file1_lineedit.text() or not self.file2_lineedit.text():
             self.show_error_message(message="Please provide files to compare", title="Error reading csv files")
+            return
 
         file1_name = self.file1_lineedit.text()
         file2_name = self.file2_lineedit.text()
         try:
-            self.model = CompareModel(file1_name, file2_name)
+            self.model = CompareModel(file1_name, file2_name, strict_typing=self.strict_typing)
         except ValueError as e:
-            self.show_error_message(message="{}\n{}".format("Error reading data:", str(e)), title="Error reading csv files")
+            self.show_error_message(message="{}\n{}".format("Error reading data:", str(e)), title="Error reading data file")
             return
+        self.statusbar_message(left="file1: rows={}, cols={}  //  file2: rows={}, cols={}".format(self.model.rowCount_data1(),
+                                                                                                  self.model.columnCount_data1(),
+                                                                                                  self.model.rowCount_data2(),
+                                                                                                  self.model.columnCount_data2()))
         self.compare_tableview.setModel(self.model)
         self.compare_tableview.resizeColumnsToContents()
 
