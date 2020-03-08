@@ -12,6 +12,7 @@ import sys
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 import pandas as pd
+from functools import lru_cache
 
 
 __application__ = "CSV Compare"
@@ -34,17 +35,20 @@ class CompareModel(QtCore.QAbstractTableModel):
         self._data2_header = list(data2.columns.values)
         self._header = list(data1.columns.values) + [item for item in data2.columns.values if item not in data1.columns.values]
 
+    @lru_cache(maxsize=1)
     def rowCount(self, parent=None):
         rows_data1 = len(self._data1)
         rows_data2 = len(self._data2)
         return max(rows_data1, rows_data2) * 2
 
+    @lru_cache(maxsize=1)
     def columnCount(self, parent=None):
         cols_data1 = self._data1.columns.size
         cols_data2 = self._data2.columns.size
         cols_datacompare = max(cols_data1, cols_data2)
         return cols_datacompare
 
+    @lru_cache(maxsize=512)
     def data(self, index, role=QtCore.Qt.DisplayRole):
         data_row = int(index.row() / 2)
         data_select = index.row() % 2
@@ -81,6 +85,7 @@ class CompareModel(QtCore.QAbstractTableModel):
                 return QtGui.QBrush(color)
         return QtCore.QVariant()
 
+    @lru_cache(maxsize=512)
     def headerData(self, section, orientation, role):
         if role == QtCore.Qt.DisplayRole:
             if orientation == QtCore.Qt.Horizontal:
@@ -100,9 +105,13 @@ class MainWindow(QtWidgets.QMainWindow):
     call_spss_processing_signal = QtCore.pyqtSignal()
     call_report_generation_signal = QtCore.pyqtSignal()
 
-    def __init__(self, parent=None, *args, **kwargs):
+    def __init__(self, parent=None, file1=None, file2=None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setup_ui()
+        if file1:
+            self.file1_lineedit.setText(file1)
+        if file2:
+            self.file2_lineedit.setText(file2)
 
     def setup_ui(self):
         self.ui_titlebar()
@@ -184,11 +193,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.statusbar_message(left="", center="", right="")
 
     def statusbar_message(self, left=None, center=None, right=None):
-        if left is None:
+        if left is not None:
             self.status_message_left.setText(left)
-        if center is None:
+        if center is not None:
             self.status_message_center.setText(center)
-        if right is None:
+        if right is not None:
             self.status_message_right.setText(right)
 
     def show_file1_input_dialog(self):
@@ -206,12 +215,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.file2_lineedit.setText(filename[0])
 
     def compare(self):
-        if not self.file1_lineedit.text():
-            self.file1_lineedit.setText("/home/patrick/Projects/csvcompare/data/data1.csv")
-        if not self.file2_lineedit.text():
-            self.file2_lineedit.setText("/home/patrick/Projects/csvcompare/data/data2.csv")
-        df_file1 = None
-        df_file2 = None
+        if not self.file1_lineedit.text() or not self.file2_lineedit.text():
+            self.show_error_message(message="Please provide files to compare", title="Error reading csv files")
+
+        file1_name = self.file1_lineedit.text()
+        file1_name = self.file2_lineedit.text()
         try:
             df_file1 = pd.read_csv(self.file1_lineedit.text(), sep=';')
         except Exception as e:
