@@ -113,11 +113,6 @@ class CompareModel(QtCore.QAbstractTableModel):
 
 class MainWindow(QtWidgets.QMainWindow):
 
-    call_process_signal = QtCore.pyqtSignal(str)
-    call_preprocessing_signal = QtCore.pyqtSignal()
-    call_spss_processing_signal = QtCore.pyqtSignal()
-    call_report_generation_signal = QtCore.pyqtSignal()
-
     def __init__(self, parent=None, file1=None, file2=None, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.setup_ui()
@@ -125,6 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.file1_lineedit.setText(file1)
         if file2:
             self.file2_lineedit.setText(file2)
+        self.model = None
 
     def setup_ui(self):
         self.ui_titlebar()
@@ -234,11 +230,11 @@ class MainWindow(QtWidgets.QMainWindow):
         file1_name = self.file1_lineedit.text()
         file2_name = self.file2_lineedit.text()
         try:
-            model = CompareModel(file1_name, file2_name)
+            self.model = CompareModel(file1_name, file2_name)
         except ValueError as e:
             self.show_error_message(message="{}\n{}".format("Error reading data:", str(e)), title="Error reading csv files")
             return
-        self.compare_tableview.setModel(model)
+        self.compare_tableview.setModel(self.model)
         self.compare_tableview.resizeColumnsToContents()
 
     def show_error_message(self, message: str, title=None):
