@@ -15,7 +15,7 @@ Requirements
 
 * Python 3.8
 * PyQt5 (Python3 bindings for Qt5)
-* pandas (for loading the data)
+* datatable (for loading the data)
 
 
 Running
